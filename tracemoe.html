@@ -3,7 +3,6 @@
     <head>  <!-- vir jassie doen die ander dinge vir die kop -->
         <title>Tracemoe</title>  <!--plekhouer-->
         <link rel="stylesheet" href="main css.css">
-        <link rel="script" href="main js.js" type="text/javascript">
         <link rel="icon" type="image/png" href="images assets/naruto.jpg">
 
     </head>
@@ -15,7 +14,7 @@
   <body class ="tracemoe">
     <div class ="navbar">
         <div class="logo">
-            <img src="images assets/naruto.jpg" alt="Yomiru Logo" width="30" height="30">
+            <img src="images assets/naruto.jpg" alt="Yomiru Logo" width="50" height="50">
         </div>
         <div class="navblock">
         <a class="navlinks" href="homepage.html">Home</a>
@@ -26,37 +25,33 @@
         </div> <!--plekhouer, doen vir meeste van die bly -->
 
         <div class="searchbar">
-            <input type="text" placeholder="Search...">
-
+            <input type="text" id="myInput" onkeyup="toggleSearchbar()" placeholder="ex naruto">
         </div>
     </div> <!--plekhouer, doen vir meeste van die bly --> 
 
 
     <div class="tracecontainer">
     <div class ="traceblock" >
-
-        <p><div class ="inputblock"><input class = "tracemoein" type ="image" src="cam.png"  height="400" ></input></div> <!--plekhouer-->
+        <label for="tracemoein">
+        <p><div class ="inputblock">
+            <input id="tracemoein" class="tracemoein" type="file" accept="image/*" style="display: none;"></input></div> <!--plekhouer-->
+            </label>
             <div class ="block">
-                <h1 class="tracemoeheading">Dragon Ball Z</h1>
-                <p class="tracemoepara">Dragon Ball Z is a Japanese anime television series produced by Toei Animation. It is the sequel to the original Dragon Ball series and follows the adventures of Goku as he defends the Earth against powerful foes.</p>
-                <p class="tracemoepara">The series is known for its intense battles, character development, and iconic transformations such as Super Saiyan. It has become a cultural phenomenon and has spawned numerous movies, spin-offs, and merchandise.</p>
+                <h1 class="tracemoeheading" id="tracemoeheading"></h1>
+                <p class="tracemoepara" id="tracemoepara"></p>
             </div> <!--plekhouer-->
         </p>
     </div>
 
 
     <div class ="toggles">
-        <body class = "togglebody">
         <div class ="watch">
             <button class="watchlink" href="">Watch Now</button>
-        
             <button class="addlink" href="">Add to list</button>
     </div> 
 
     </div>
-        </body>
 
-</body>
-
-    
+    <script src="main js.js"></script>
+    </body>    
 </doctype>
