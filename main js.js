@@ -1,9 +1,29 @@
-function cleanTitle(rawTitle) { //for getting rid of random characters or east-asian language characters or numbers, and just getting the anime title
-  const match = rawTitle.match(/\[([^\]]*One_Piece[^\]]*)\]/i) || rawTitle.match(/\[([^\]]*Naruto[^\]]*)\]/i);
-  if (match) return match[1].replace(/_/g, " ");
+// Cleans up raw filenames or titles returned by TraceMoe so that they can be
+// reliably looked up on MAL. The old implementation only handled a couple of
+// hard coded shows which resulted in failed lookups for most results.
+function cleanTitle(rawTitle = "") {
 
-  // Fallback: remove anything in brackets and extensions
-  return rawTitle.replace(/\[.*?\]/g, "").replace(/\.(mp4|mkv|avi)$/, "").trim();
+  const cleaned = rawTitle
+
+    // remove groups or additional info contained in [brackets]
+    .replace(/\[[^\]]*\]/g, "")
+    // drop the file extension before other cleanup
+    .replace(/\.[^.]+$/, "")
+    // remove any bracketed info like resolutions
+    .replace(/\([^)]*\)/g, "")
+    // replace underscores or dots with spaces
+    .replace(/[_.]/g, " ")
+    // remove trailing episode indicators or numbers
+    .replace(/-?\s*(?:ep(?:isode)?\s*)?\d+\s*$/i, "")
+    // also drop leftover 'E' or 'EP'
+    .replace(/\b[EePp]+$/, "")
+
+    // trim stray dashes or spaces that may remain on either end
+    .replace(/^[\s-]+|[\s-]+$/g, "")
+    .trim();
+
+  return cleaned || rawTitle.trim();
+
 }
 
 function loginWithMAL() {
@@ -11,20 +31,31 @@ function loginWithMAL() {
 }
 
 async function getAnimeInfo(title) {
-  try {
-    const response = await fetch(`http://localhost:3000/mal/anime-info?title=${encodeURIComponent(title)}`);
-    if (!response.ok) {
-      console.error("Failed to fetch anime info, server responded with:", response.status);
-      return "Could not retrieve summary.";
-    }
-    const data = await response.json();
-    const anime = data.data?.[0]?.node;
 
-    if (!anime || !anime.synopsis) {
-      console.error("Anime or synopsis not found for title:", title);
-      return "Synopsis not available for this title.";
+  if (!title || title.trim().length < 2) return "Could not retrieve summary.";
+
+
+  async function fetchInfo(q) {
+    const resp = await fetch(
+      `http://localhost:3000/mal/anime-info?title=${encodeURIComponent(q)}`
+    );
+    if (!resp.ok) return null;
+    const anime = await resp.json();
+    return anime?.synopsis || null;
+  }
+
+  try {
+
+    let synopsis = await fetchInfo(title);
+
+
+    // Retry with a simplified title if initial lookup failed
+    if (!synopsis && /[:\-]/.test(title)) {
+      const alt = title.split(/[:\-]/)[0].trim();
+      if (alt) synopsis = await fetchInfo(alt);
     }
-    return anime.synopsis;
+
+    return synopsis || "Could not retrieve summary.";
   } catch (error) {
     console.error("Error in getAnimeInfo:", error);
     return "Error fetching summary.";
@@ -115,7 +146,13 @@ async function testTraceMoe() {
     const bestMatch = traceData.result?.[0];
 
     if (bestMatch) {
-      const rawTitle = bestMatch.filename || bestMatch.anime || "Unknown Title";
+      const rawTitle =
+        bestMatch.title_english ||
+        bestMatch.title_romaji ||
+        bestMatch.title ||
+        bestMatch.filename ||
+        bestMatch.anime ||
+        "Unknown Title";
       const title = cleanTitle(rawTitle);
       const episode = bestMatch.episode || "N/A";
       const similarity = bestMatch.similarity;
@@ -147,3 +184,4 @@ async function testTraceMoe() {
     document.getElementById("tracemoepara").textContent = "Please try another image or check the console.";
   }
 }
+

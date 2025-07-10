@@ -1,57 +1,51 @@
-<doctype HTML>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tracemoe</title>
+  <link rel="stylesheet" href="main css.css">
+  <link rel="icon" type="image/png" href="images assets/naruto.jpg">
+</head>
+<body class="tracemoe">
+  <div class="navbar">
+    <div class="logo">
+      <img src="images assets/naruto.jpg" alt="Yomiru Logo" width="50" height="50">
+    </div>
+    <div class="navblock">
+      <a class="navlinks" href="homepage.html">Home</a>
+      <a class="navlinks" href="tracemoe.html">Tracemoe</a>
+      <a class="navlinks" href="anime.html">Anime</a>
+      <a class="navlinks" href="manga.html">Manga</a>
+      <a class="navlinks" href="contact.html">Contact</a>
+    </div>
+    <div class="searchbar">
+      <input type="text" id="myInput" onkeyup="toggleSearchBar()" placeholder="ex naruto">
+    </div>
+  </div>
 
-    <head>  <!-- vir jassie doen die ander dinge vir die kop -->
-        <title>Tracemoe</title>  <!--plekhouer-->
-        <link rel="stylesheet" href="main css.css">
-        <link rel="icon" type="image/png" href="images assets/naruto.jpg">
-
-    </head>
-
-
-  <!-- tweede dar is min vir ons, want dar is n par dinge-->
-
-
-  <body class ="tracemoe">
-    <div class ="navbar">
-        <div class="logo">
-            <img src="images assets/naruto.jpg" alt="Yomiru Logo" width="50" height="50">
-        </div>
-        <div class="navblock">
-        <a class="navlinks" href="homepage.html">Home</a>
-        <a class="navlinks" href="tracemoe.html">Tracemoe</a>
-        <a class="navlinks" href="anime.html">Anime</a>
-        <a class="navlinks" href="manga.html">Manga</a>
-        <a class="navlinks" href="contact.html">Contact</a>
-        </div> <!--plekhouer, doen vir meeste van die bly -->
-
-        <div class="searchbar">
-            <input type="text" id="myInput" onkeyup="toggleSearchbar()" placeholder="ex naruto">
-        </div>
-    </div> <!--plekhouer, doen vir meeste van die bly --> 
-
-
-    <div class="tracecontainer">
-    <div class ="traceblock" >
-        <label for="tracemoein">
-        <p><div class ="inputblock">
-            <input id="tracemoein" class="tracemoein" type="file" accept="image/*" style="display: none;"></input></div> <!--plekhouer-->
-            </label>
-            <div class ="block">
-                <h1 class="tracemoeheading" id="tracemoeheading"></h1>
-                <p class="tracemoepara" id="tracemoepara"></p>
-            </div> <!--plekhouer-->
-        </p>
+  <div class="tracecontainer">
+    <div class="traceblock">
+      <label for="tracemoein" class="inputblock">
+        <img src="images assets/cam.png" alt="Upload screenshot" width="50" height="50">
+        <input id="tracemoein" class="tracemoein" type="file" accept="image/*" style="display:none;">
+      </label>
+      <div class="block">
+        <h1 class="tracemoeheading" id="tracemoeheading"></h1>
+        <p class="tracemoepara" id="tracemoepara"></p>
+      </div>
     </div>
 
+    <div class="toggles">
+      <div class="watch">
+        <button class="watchlink" href="">Watch Now</button>
+        <button class="addlink" href="">Add to list</button>
 
-    <div class ="toggles">
-        <div class ="watch">
-            <button class="watchlink" href="">Watch Now</button>
-            <button class="addlink" href="">Add to list</button>
-    </div> 
-
+      </div>
     </div>
+  </div>
 
-    <script src="main js.js"></script>
-    </body>    
-</doctype>
+
+  <script src="main js.js"></script>
+</body>
+</html>
