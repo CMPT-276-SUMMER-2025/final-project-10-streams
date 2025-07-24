@@ -19,6 +19,11 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
+// Health check endpoint
+app.get("/", (req, res) => {
+  res.json({ status: "Anime API is running successfully!" });
+});
+
 // === 1. Login route ===
 app.get("/login", (req, res) => {
   const codeVerifier = generateCodeVerifier();
@@ -46,7 +51,7 @@ app.get("/callback", async (req, res) => {
   }
 
   try {
-    const qs = require("querystring");
+    const qs = require("qs");
 
     const tokenRes = await axios.post(
       "https://myanimelist.net/v1/oauth2/token",
@@ -78,21 +83,51 @@ app.get("/mal/anime-info", async (req, res) => {
   if (!title) {
     return res.status(400).json({ error: "Title query is required" });
   }
+
+  // Clean up the title for better search accuracy
+  // Remove common suffixes like (TV), (Movie), season numbers, etc.
+  const cleanedTitle = title
+    .replace(/\s*\(tv\)|\s*\(movie\)|\s*\(ova\)|\s*\(special\)/gi, "")
+    .replace(/\s+season\s+\d+|\s+s\d+|\s+\d+.*$/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
   try {
     const info = await axios.get("https://api.myanimelist.net/v2/anime", {
       params: {
-        q: title,
-        limit: 5,
-        fields: "start_date,end_date,synopsis"
+        q: cleanedTitle,
+        limit: 10,
+        fields: "start_date,end_date,synopsis,title,alternative_titles"
       },
       headers: {
         "X-MAL-CLIENT-ID": CLIENT_ID
       }
     });
 
-    const anime = info.data?.data?.[0]?.node;
-    if (!anime) {
+    const results = info.data?.data || [];
+    if (results.length === 0) {
       return res.status(404).json({ error: "Anime not found" });
+    }
+
+    // Find the best match from the results
+    let anime = null;
+    const lowerCleanedTitle = cleanedTitle.toLowerCase();
+    
+    // First, try to find an exact match
+    anime = results.find(item => {
+      const nodeTitle = item.node.title.toLowerCase();
+      return nodeTitle === lowerCleanedTitle || 
+             nodeTitle.includes(lowerCleanedTitle) ||
+             lowerCleanedTitle.includes(nodeTitle);
+    })?.node;
+
+    // If no good match found, use the first result
+    if (!anime) {
+      anime = results[0]?.node;
+    }
+
+    if (!anime) {
+      return res.status(404).json({ error: "Anime not found in results" });
     }
 
     res.json(anime);
@@ -104,13 +139,17 @@ app.get("/mal/anime-info", async (req, res) => {
 
 // === 4. Recommend based on genre ===
 app.get("/mal/recommend", async (req, res) => {
-  const title = req.query.title;
+  const title = (req.query.title || "").trim();
+  if (!title) {
+    return res.status(400).json({ error: "Title query is required" });
+  }
+  
   try {
     const searchRes = await axios.get(`https://api.myanimelist.net/v2/anime`, {
       params: {
         q: title,
-        limit: 10,
-        fields: "genres,mean,rank,popularity"
+        limit: 5,
+        fields: "genres,mean,rank,popularity,title"
       },
       headers: {
         "X-MAL-CLIENT-ID": CLIENT_ID
@@ -118,16 +157,28 @@ app.get("/mal/recommend", async (req, res) => {
     });
 
     const anime = searchRes.data.data?.[0]?.node;
-    if (!anime || !anime.genres || anime.genres.length === 0) {
-      return res.json({ anime, recommendations: [] });
+    if (!anime) {
+      return res.status(404).json({ error: "Anime not found for recommendations" });
+    }
+    
+    if (!anime.genres || anime.genres.length === 0) {
+      return res.json({ 
+        anime: {
+          title: anime.title,
+          genres: [],
+          mean: anime.mean,
+          popularity: anime.popularity
+        }, 
+        recommendations: [] 
+      });
     }
 
     const genre = anime.genres[0].name;
     const recRes = await axios.get(`https://api.myanimelist.net/v2/anime`, {
       params: {
         q: genre,
-        limit: 10,
-        fields: "mean"
+        limit: 15,
+        fields: "mean,title"
       },
       headers: {
         "X-MAL-CLIENT-ID": CLIENT_ID
@@ -136,7 +187,7 @@ app.get("/mal/recommend", async (req, res) => {
 
     const recommendations = recRes.data.data
       .map(a => a.node)
-      .filter(a => a.mean && a.mean > 7 && a.title !== anime.title)
+      .filter(a => a.mean && a.mean > 7.0 && a.title !== anime.title)
       .slice(0, 5);
 
     res.json({

@@ -2,28 +2,60 @@
 // reliably looked up on MAL. The old implementation only handled a couple of
 // hard coded shows which resulted in failed lookups for most results.
 function cleanTitle(rawTitle = "") {
-
-  const cleaned = rawTitle
-
-    // remove groups or additional info contained in [brackets]
-    .replace(/\[[^\]]*\]/g, "")
-    // drop the file extension before other cleanup
-    .replace(/\.[^.]+$/, "")
-    // remove any bracketed info like resolutions
+  let cleaned = rawTitle;
+  
+  // First, remove file extension
+  cleaned = cleaned.replace(/\.[^.]+$/, "");
+  
+  // Strategy: Extract anime title from brackets, but be smart about it
+  // Look for patterns like [GroupName][Anime Title][Episode][Quality] etc.
+  const bracketMatches = cleaned.match(/\[([^\]]+)\]/g);
+  
+  if (bracketMatches && bracketMatches.length > 1) {
+    // Try to find the anime title - usually the longest meaningful bracket
+    // or the second bracket (after group name)
+    let animeTitle = "";
+    
+    for (let match of bracketMatches) {
+      const content = match.slice(1, -1); // Remove [ and ]
+      
+      // Skip if it's clearly not an anime title
+      if (content.match(/^\d+$|x\d+|^\d+_\d+$|^[A-Z]{2,5}$|x264|x265|aac|mp4|mkv|avi/i)) {
+        continue;
+      }
+      
+      // If it contains letters and is longer than 3 chars, likely the title
+      if (content.length > 3 && /[a-zA-Z]/.test(content)) {
+        animeTitle = content;
+        break;
+      }
+    }
+    
+    if (animeTitle) {
+      cleaned = animeTitle;
+    }
+  } else {
+    // Fallback: remove all brackets and clean up
+    cleaned = cleaned.replace(/\[[^\]]*\]/g, "");
+  }
+  
+  // Additional cleanup
+  cleaned = cleaned
+    // Remove any remaining parentheses content
     .replace(/\([^)]*\)/g, "")
-    // replace underscores or dots with spaces
+    // Replace underscores or dots with spaces
     .replace(/[_.]/g, " ")
-    // remove trailing episode indicators or numbers
+    // Remove episode indicators
     .replace(/-?\s*(?:ep(?:isode)?\s*)?\d+\s*$/i, "")
-    // also drop leftover 'E' or 'EP'
-    .replace(/\b[EePp]+$/, "")
-
-    // trim stray dashes or spaces that may remain on either end
-    .replace(/^[\s-]+|[\s-]+$/g, "")
+    .replace(/\b(?:episode|ep|e)\s*\d+/gi, "")
+    // Remove season indicators
+    .replace(/\b(?:season|s)\s*\d+/gi, "")
+    // Clean up multiple spaces
+    .replace(/\s+/g, " ")
+    // Trim
     .trim();
 
   return cleaned || rawTitle.trim();
-
 }
 
 function loginWithMAL() {
@@ -153,7 +185,8 @@ async function testTraceMoe() {
         bestMatch.filename ||
         bestMatch.anime ||
         "Unknown Title";
-      const title = cleanTitle(rawTitle);
+      
+      const cleanedTitle = cleanTitle(rawTitle);
       const episode = bestMatch.episode || "N/A";
       const similarity = bestMatch.similarity;
       const videoUrl = bestMatch.video;
@@ -161,15 +194,16 @@ async function testTraceMoe() {
       const minutes = Math.floor(from / 60);
       const seconds = Math.floor(from % 60);
       
-      // Call the improved getAnimeInfo function
-      const summary = await getAnimeInfo(title);
+      // Call the improved getAnimeInfo function with cleaned title
+      const summary = await getAnimeInfo(cleanedTitle);
 
-      document.getElementById("tracemoeheading").innerHTML = `<strong>Title:</strong> ${title}`;
+      // Display the cleaned title instead of raw title
+      document.getElementById("tracemoeheading").innerHTML = `<strong>Title:</strong> ${cleanedTitle}`;
       document.getElementById("tracemoepara").innerHTML =
         `<strong>Episode:</strong> ${episode}<br>` +
         `<strong>Timestamp:</strong> ${minutes}:${seconds.toString().padStart(2, '0')}<br>` +
         `<strong>Similarity:</strong> ${(similarity * 100).toFixed(2)}%<br><br>` +
-        `<video controls muted loop autoplay width="300" src="${videoUrl}"></video><br>` +
+        `<video controls muted loop autoplay width="300" src="${videoUrl}"></video><br><br>` +
         `<strong>Summary:</strong> ${summary}`;
     } else {
       console.log("TraceMoe full response:", traceData);
