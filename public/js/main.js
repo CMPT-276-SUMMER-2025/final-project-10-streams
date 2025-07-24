@@ -128,6 +128,17 @@ async function getAnimeDetailsThenSuggest() {
   }
 }
 
+function toggleSearch() {
+  // You can implement search functionality here
+  // For now, it will just show an alert
+  const searchTerm = prompt("Enter your search term:");
+  if (searchTerm) {
+    alert(`Searching for: ${searchTerm}`);
+    // Here you could redirect to a search page or perform a search
+    // window.location.href = `search.html?q=${encodeURIComponent(searchTerm)}`;
+  }
+}
+
 function toggleSearchBar() {
   const searchBar = document.querySelector('.searchbar');
   if (searchBar.style.display === 'none' || searchBar.style.display === '') {
