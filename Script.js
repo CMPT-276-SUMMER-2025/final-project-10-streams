@@ -34,3 +34,9 @@ carousel.addEventListener("scroll", () => {
 
 // Initial highlight
 updateCenterItem();
+
+
+
+
+
+

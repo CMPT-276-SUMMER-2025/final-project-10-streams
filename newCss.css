@@ -30,7 +30,7 @@ nav {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-top: -70px;
+  margin-top: -50px;
 }
 
 nav button, nav input, nav a {
@@ -185,77 +185,114 @@ background-color: rgba(0, 0, 0, 0.5);
 
 /* CSS FOR GHIBLI PAGE */
 
-.ghibli-wrapper {
-  margin: auto;
-  width: 90%;
-  max-width: 1000px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 40px;
-  padding: 2rem;
-  border: 3px solid #29a9ff;
-  box-shadow: 0 0 20px rgba(41, 169, 255, 0.4);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  backdrop-filter: blur(10px);
-}
-
-.carousel-ghibli {
-  display: flex;
-  overflow-x: auto;
-  gap: 1rem;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 1rem;
-  width: 100%;
-  justify-content: center;
-}
-
-.carousel-image {
-  width: 500px;
-  height: 250px;
-  object-fit: cover;
+.carousel-ghibli-wrapper {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
   border-radius: 2rem;
-  scroll-snap-align: center;
-  flex-shrink: 0;
-  transition: transform 0.3s ease;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
-.carousel-image:hover {
-  transform: scale(1.08);
-}
-
-.ghibli-info {
-  background-color: rgba(255, 255, 255, 0.3);
-  color: #1a1a1a;
-  border-radius: 20px;
-  padding: 1rem 1.5rem;
-  margin-top: 1rem;
-  max-width: 95%;
-  font-size: 1rem;
-  line-height: 1.6;
-}
-
-.ghibli-buttons {
-  margin-top: 1.5rem;
-  width: 100%;
+.carousel-ghibli-track {
   display: flex;
-  justify-content: space-between;
-  padding: 0 2rem;
+  gap: 2rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 1rem 2rem;
 }
 
-.ghibli-buttons button {
-  background-color: #e0363b;
+.carousel-ghibli-item {
+  flex: 0 0 auto;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  filter: brightness(0.6) blur(1px);
+  transform: scale(0.9);
+}
+
+.carousel-ghibli-item.active {
+  transform: scale(1.1);
+  filter: brightness(1) blur(0);
+  box-shadow: 0 0 20px #00f0ff88;
+}
+
+.carousel-ghibli-item img {
+  height: 300px;
+  width: auto;
+  border-radius: 1.5rem;
+  object-fit: cover;
+}
+
+/* Arrows */
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2rem;
+  background-color: #e84141;
   color: white;
   border: none;
-  padding: 0.6rem 1.5rem;
-  border-radius: 15px;
-  font-weight: bold;
-  font-size: 1rem;
+  border-radius: 50%;
   cursor: pointer;
-  transition:0.2s ease;
+  z-index: 10;
+  padding: 0.5rem 1rem;
+  transition: background-color 0.2s;
+}
+.carousel-btn:hover {
+  background-color: #c12e2e;
+}
+.carousel-btn.prev {
+  left: 10px;
+}
+.carousel-btn.next {
+  right: 10px;
 }
 
-.ghibli-buttons button:hover {
-  background-color: #c52d2d;
+/* Info box */
+.ghibli-info-box {
+  background: rgba(255, 255, 255, 0.08);
+  margin: 2rem auto 0;
+  padding: 1rem 2rem;
+  border-radius: 1.5rem;
+  max-width: 800px;
+  color: white;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.ghibli-info-box h2 {
+  margin-bottom: 0.5rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.ghibli-info-box p {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.carousel-ghibli-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  gap: 20px;
+  padding: 20px;
+  scrollbar-width: none;
+}
+.carousel-ghibli-track::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-ghibli-item {
+  min-width: 400px; /* or adjust based on image size */
+  flex-shrink: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+.carousel-ghibli-item.active {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
 }
 
