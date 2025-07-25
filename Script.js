@@ -36,6 +36,34 @@ carousel.addEventListener("scroll", () => {
 updateCenterItem();
 
 
+// For the tracemoe
+document.getElementById("image-upload").addEventListener("change", async function () {
+  const file = this.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("image", file);
+
+  try {
+    const res = await fetch("https://api.trace.moe/search", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    const result = data.result[0];
+
+    document.getElementById("results").style.display = "block";
+    document.getElementById("anime-title").textContent = result.anilist.title.romaji;
+    document.getElementById("episode-info").textContent = `Episode ${result.episode || 'N/A'} | Similarity: ${(result.similarity * 100).toFixed(1)}%`;
+    document.getElementById("watch-link").href = result.video || "#";
+  } catch (error) {
+    alert("Something went wrong! Please try another image.");
+    console.error(error);
+  }
+});
+
+
 
 
 
