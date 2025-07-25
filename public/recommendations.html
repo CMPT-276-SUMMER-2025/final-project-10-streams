@@ -1,0 +1,908 @@
+<link rel="stylesheet" href="newCss.css">
+<link rel="stylesheet" href="recommendations.css">
+<link rel="icon" href="images/logo.png" type="image/png">
+<body style="min-height:100vh; margin:0; display:flex; flex-direction:column;">
+  <header>
+    <div class="logo"><a href="index.html"><img src="images/Website_logo_new.png" alt="Website logo"></a></div>
+    <nav class="navbar">
+      <a href="Ghibli.html">Ghibli</a>
+      <a href="tracemoe.html">Tracemoe</a>
+      <a href="recommendations.html">Recommendations</a>
+      <a href="anime.html">Chatbot</a>
+      <a href="about.html">About</a>
+      <div class="search-button">
+        <button class="search-btn" onclick="window.location.href='search.html'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+  </header>
+<body>
+  <section class="anime-recommendation-wrapper">
+    <div class="anime-card-container">
+      <div id="anime-cards">
+        <!-- Cards will be dynamically inserted here -->
+      </div>
+      <div class="anime-info-box">
+        <div id="anime-info">
+          <strong id="anime-title">Pokemon</strong>
+          <p id="anime-synopsis">Two teens switch bodies mysteriously.</p>
+        </div>
+      </div>
+      <div class="tinder-buttons">
+        <button class="tinder-btn cross" id="cross-btn" title="Nope">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6L6 18" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            <path d="M6 6L18 18" stroke="white" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="tinder-btn check" id="check-btn" title="Like">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 6L9 17L4 12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const API_BASE = "http://localhost:3000";
+    
+    // Store user likes for recommendation algorithm
+    let userLikes = [];
+    let similarAnimeList = [];
+    let trendingAnimeList = [];
+    let displayQueue = [];
+    let current = 0;
+    
+    // Track shown anime to prevent repeats
+    let shownAnimeIds = new Set();
+    let currentOffset = 0; // For pagination when fetching more trending anime
+    
+    const cardsContainer = document.getElementById('anime-cards');
+    let isLoading = true;
+    
+    // Demo data for trending anime (fallback if API fails)
+    function getDemoTrendingAnime() {
+      const demoAnime = [
+        { 
+          title: 'One Piece', 
+          synopsis: 'Monkey D. Luffy sets sail with his crew in search of the legendary treasure known as One Piece, aiming to become the King of the Pirates.',
+          main_picture: { large: 'images/onepiece.jpeg' },
+          id: 1
+        },
+        { 
+          title: 'Naruto', 
+          synopsis: 'Naruto Uzumaki, a mischievous adolescent ninja, struggles as he searches for recognition and dreams of becoming the Hokage.',
+          main_picture: { large: 'images/naruto.jpeg' },
+          id: 2
+        },
+        { 
+          title: 'Bleach', 
+          synopsis: 'Ichigo Kurosaki gains the powers of a Soul Reaper and dedicates his life to protecting the innocent from evil spirits.',
+          main_picture: { large: 'images/bleach.jpg' },
+          id: 3
+        },
+        { 
+          title: 'Pokemon', 
+          synopsis: 'Ash Ketchum aims to become a Pokemon Master by catching and training Pokemon, traveling across various regions.',
+          main_picture: { large: 'images/pokemon.jpg' },
+          id: 4
+        }
+      ];
+      
+      // Filter out already shown demo anime
+      return demoAnime.filter(anime => !shownAnimeIds.has(anime.id));
+    }
+    
+    // Demo data for similar anime (fallback if API fails)
+    function getDemoSimilarAnime() {
+      const demoAnime = [
+        { 
+          title: 'Dragon Ball Z', 
+          synopsis: 'Goku and his friends defend Earth from various villains threatening the planet and universe.',
+          main_picture: { large: 'images/dbz.jpg' },
+          id: 5
+        },
+        { 
+          title: 'Hunter x Hunter', 
+          synopsis: 'Gon Freecss takes the Hunter Exam to find his father, who is a legendary Hunter.',
+          main_picture: { large: 'images/gon.jpg' },
+          id: 6
+        }
+      ];
+      
+      // Filter out already shown demo anime
+      return demoAnime.filter(anime => !shownAnimeIds.has(anime.id));
+    }
+    
+    // Show loading indicator
+    function showLoading() {
+      cardsContainer.innerHTML = ''; // Clear previous content
+      const loadingDiv = document.createElement('div');
+      loadingDiv.className = 'loading-indicator';
+      loadingDiv.id = 'loading-indicator';
+      
+      const spinner = document.createElement('div');
+      spinner.className = 'loading-spinner';
+      
+      const text = document.createElement('p');
+      text.textContent = 'Finding anime recommendations...';
+      
+      loadingDiv.appendChild(spinner);
+      loadingDiv.appendChild(text);
+      
+      cardsContainer.appendChild(loadingDiv);
+      // Also update the info box
+      document.getElementById('anime-title').textContent = 'Loading...';
+      document.getElementById('anime-synopsis').textContent = 'Please wait while we fetch personalized recommendations.';
+    }
+    
+    // Hide loading indicator
+    function hideLoading() {
+      const loadingDiv = document.getElementById('loading-indicator');
+      if (loadingDiv) {
+        loadingDiv.remove();
+      }
+      isLoading = false;
+    }
+    
+    // Fetch trending anime from MAL API
+    async function fetchTrendingAnime(limit = 20) {
+      try {
+        const url = `${API_BASE}/mal/trending?limit=${limit}&offset=${currentOffset}`;
+        console.log(`🌐 Fetching trending anime from: ${url}`);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        console.log('📡 Response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          console.error(`❌ API request failed with status: ${response.status}`);
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
+          return getDemoTrendingAnime();
+        }
+        
+        const data = await response.json();
+        console.log('📦 Raw API response:', data);
+        
+        if (data && data.anime && Array.isArray(data.anime) && data.anime.length > 0) {
+          // Filter out already shown anime AND anime already in our lists
+          const existingIds = new Set([
+            ...Array.from(shownAnimeIds),
+            ...displayQueue.map(a => a.id),
+            ...trendingAnimeList.map(a => a.id),
+            ...similarAnimeList.map(a => a.id)
+          ]);
+          
+          const newAnime = data.anime.filter(anime => !existingIds.has(anime.id));
+          console.log(`✅ Filtered ${data.anime.length} anime down to ${newAnime.length} truly new anime`);
+          console.log('Sample new anime:', newAnime[0]);
+          
+          // Update offset for next fetch
+          currentOffset += limit;
+          console.log('Updated offset to:', currentOffset);
+          
+          return shuffleArray(newAnime);
+        } else {
+          console.warn('⚠️ API returned empty or invalid data structure');
+          console.log('Data structure:', typeof data, Object.keys(data || {}));
+          return getDemoTrendingAnime();
+        }
+      } catch (error) {
+        console.error('❌ Network error fetching trending anime:', error);
+        console.error('Error details:', error.message, error.stack);
+        return getDemoTrendingAnime();
+      }
+    }
+    
+    // Fetch more anime when running low
+    async function fetchMoreAnime() {
+      console.log('Fetching more anime to prevent repeats...');
+      const moreTrending = await fetchTrendingAnime(30); // Fetch more at once
+      
+      if (moreTrending.length > 0) {
+        trendingAnimeList.push(...moreTrending);
+        console.log(`Added ${moreTrending.length} more trending anime. Total: ${trendingAnimeList.length}`);
+      }
+      
+      // If we have user likes, also fetch more similar anime
+      if (userLikes.length > 0) {
+        const moreSimilar = await fetchSimilarAnime();
+        if (moreSimilar.length > 0) {
+          // Filter out duplicates from similar anime list too
+          const uniqueSimilar = moreSimilar.filter(anime => 
+            !similarAnimeList.some(existing => existing.id === anime.id) &&
+            !shownAnimeIds.has(anime.id)
+          );
+          similarAnimeList.push(...uniqueSimilar);
+          console.log(`Added ${uniqueSimilar.length} more similar anime. Total: ${similarAnimeList.length}`);
+        }
+      }
+    }
+    
+    // Fetch similar anime based on user likes
+    async function fetchSimilarAnime() {
+      if (userLikes.length === 0) {
+        console.log('No user likes yet, skipping similar anime fetch');
+        return [];
+      }
+      
+      try {
+        console.log('Fetching similar anime based on user likes:', userLikes.map(a => a.title));
+        
+        // Use the most recent liked anime for recommendations
+        const recentLike = userLikes[userLikes.length - 1];
+        const response = await fetch(`${API_BASE}/mal/similar/${recentLike.id}?limit=15`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          console.warn(`Similar anime API request failed with status: ${response.status}`);
+          return getDemoSimilarAnime();
+        }
+        
+        const data = await response.json();
+        console.log('Similar anime API response:', data);
+        
+        if (data && data.similar && data.similar.length > 0) {
+          // Filter out already shown anime and liked anime
+          const likedIds = new Set(userLikes.map(anime => anime.id));
+          const newSimilar = data.similar.filter(anime => 
+            !shownAnimeIds.has(anime.id) && 
+            !likedIds.has(anime.id)
+          );
+          console.log(`Filtered ${data.similar.length} similar anime down to ${newSimilar.length} new anime`);
+          
+          return shuffleArray(newSimilar);
+        } else {
+          console.warn('Similar anime API returned empty or invalid data');
+          return getDemoSimilarAnime();
+        }
+      } catch (error) {
+        console.error('Error fetching similar anime:', error);
+        return getDemoSimilarAnime();
+      }
+    }
+    
+    // Create display queue alternating between similar and trending
+    function createDisplayQueue(similarList, trendingList) {
+      console.log('Creating display queue with similar:', similarList.length, 'trending:', trendingList.length);
+      
+      // Filter out already shown anime from both lists
+      const availableSimilar = similarList.filter(anime => !shownAnimeIds.has(anime.id));
+      const availableTrending = trendingList.filter(anime => !shownAnimeIds.has(anime.id));
+      
+      console.log('Available after filtering - similar:', availableSimilar.length, 'trending:', availableTrending.length);
+      
+      const queue = [];
+      const maxItems = 10; // Create a queue of next 10 anime to show
+      
+      // If we have similar anime, alternate. Otherwise, just use trending
+      if (availableSimilar.length > 0) {
+        let similarIndex = 0;
+        let trendingIndex = 0;
+        
+        for (let i = 0; i < maxItems && (similarIndex < availableSimilar.length || trendingIndex < availableTrending.length); i++) {
+          if (i % 2 === 0 && similarIndex < availableSimilar.length) {
+            // Add similar anime (even indices)
+            queue.push({ ...availableSimilar[similarIndex], source: 'similar' });
+            similarIndex++;
+          } else if (trendingIndex < availableTrending.length) {
+            // Add trending anime (odd indices or when no more similar)
+            queue.push({ ...availableTrending[trendingIndex], source: 'trending' });
+            trendingIndex++;
+          } else if (similarIndex < availableSimilar.length) {
+            // Fallback to similar if no more trending
+            queue.push({ ...availableSimilar[similarIndex], source: 'similar' });
+            similarIndex++;
+          }
+        }
+      } else {
+        // No similar anime, just use trending
+        for (let i = 0; i < Math.min(maxItems, availableTrending.length); i++) {
+          queue.push({ ...availableTrending[i], source: 'trending' });
+        }
+      }
+      
+      console.log('Created queue with', queue.length, 'items');
+      return queue;
+    }
+    
+    // Fisher-Yates shuffle algorithm
+    function shuffleArray(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    }
+    
+    // Create and add all cards initially
+    function createCards() {
+      console.log('🏗️ Creating cards...');
+      cardsContainer.innerHTML = ''; // Clear existing cards
+      
+      console.log('Creating cards with displayQueue:', displayQueue);
+      
+      if (!displayQueue || displayQueue.length === 0) {
+        console.error('Display queue is empty, using demo data');
+        displayQueue = getDemoTrendingAnime().map(anime => ({ ...anime, source: 'trending' }));
+      }
+      
+      // Create cards for all anime in queue
+      displayQueue.forEach((anime, index) => {
+        createSingleCard(anime, index);
+      });
+      
+      // Show only the current card
+      showCurrentCard();
+      
+      // Ensure buttons are always visible
+      document.querySelector('.tinder-buttons').style.display = 'flex';
+      
+      console.log(`✅ Created ${displayQueue.length} cards`);
+    }
+    
+    // Add new cards to the existing deck (WITHOUT clearing existing cards)
+    function addNewCards(newAnime, startIndex) {
+      console.log('🆕 Adding', newAnime.length, 'new cards starting at index', startIndex);
+      
+      newAnime.forEach((anime, index) => {
+        const cardIndex = startIndex + index;
+        createSingleCard(anime, cardIndex);
+        console.log(`➕ Added card ${cardIndex}: ${anime.title}`);
+      });
+      
+      console.log(`✅ Added ${newAnime.length} new cards to existing deck`);
+    }
+    
+    // Create a single card
+    function createSingleCard(anime, index) {
+      const card = document.createElement('div');
+      card.className = 'anime-card';
+      card.id = `card-${index}`;
+      card.style.zIndex = 100 - index;
+      
+      // Hide all cards except current and next few
+      if (index < current) {
+        card.style.display = 'none';
+      } else if (index === current) {
+        card.style.opacity = 1;
+        card.style.transform = 'scale(1) translateY(0)';
+      } else {
+        card.style.opacity = 0.8;
+        card.style.transform = `scale(${1 - (index - current) * 0.05}) translateY(${(index - current) * 10}px)`;
+      }
+      
+      const carousel = document.createElement('div');
+      carousel.className = 'anime-card-carousel';
+      
+      const sourceBadge = document.createElement('div');
+      sourceBadge.className = 'recommendation-source';
+      sourceBadge.textContent = anime.source === 'similar' ? 'Based on your likes' : 'Trending';
+      carousel.appendChild(sourceBadge);
+      
+      const imagesContainer = document.createElement('div');
+      imagesContainer.className = 'anime-card-images';
+      imagesContainer.id = `images-${index}`;
+      
+      const images = getAnimeImages(anime.title, anime.main_picture);
+      
+      images.forEach((imgSrc, imgIndex) => {
+        const img = document.createElement('img');
+        img.className = 'anime-card-image';
+        img.src = imgSrc;
+        img.alt = `${anime.title} image ${imgIndex + 1}`;
+        
+        console.log(`🏗️ Creating img element for ${anime.title}:`);
+        console.log(`   Index: ${imgIndex}`);
+        console.log(`   URL: ${imgSrc}`);
+        console.log(`   Alt: ${img.alt}`);
+        
+        img.onerror = function() { 
+          console.error('❌ Image failed to load:', imgSrc, 'for anime:', anime.title);
+          this.src = 'images/logo.png'; // Use existing logo as fallback
+          console.log('🔄 Switched to fallback image: images/logo.png');
+        };
+        
+        img.onload = function() {
+          console.log('✅ Image loaded successfully:', imgSrc, 'for anime:', anime.title);
+        };
+        
+        imagesContainer.appendChild(img);
+      });
+      
+      const navContainer = document.createElement('div');
+      navContainer.className = 'anime-card-nav';
+      
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'nav-btn prev';
+      prevBtn.innerHTML = '&#10094;';
+      prevBtn.onclick = (e) => { e.stopPropagation(); navigateImages(index, 'prev'); };
+      
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'nav-btn next';
+      nextBtn.innerHTML = '&#10095;';
+      nextBtn.onclick = (e) => { e.stopPropagation(); navigateImages(index, 'next'); };
+      
+      navContainer.appendChild(prevBtn);
+      navContainer.appendChild(nextBtn);
+      
+      const indicatorContainer = document.createElement('div');
+      indicatorContainer.className = 'image-indicator';
+      
+      images.forEach((_, dotIndex) => {
+        const dot = document.createElement('div');
+        dot.className = `indicator-dot ${dotIndex === 0 ? 'active' : ''}`;
+        indicatorContainer.appendChild(dot);
+      });
+      
+      carousel.appendChild(imagesContainer);
+      carousel.appendChild(navContainer);
+      carousel.appendChild(indicatorContainer);
+      
+      card.appendChild(carousel);
+      cardsContainer.appendChild(card);
+      card.dataset.currentImage = 0;
+    }
+    
+    // Show the current card and position next cards
+    function showCurrentCard() {
+      console.log(`🎴 Showing current card: ${current}/${displayQueue.length}`);
+      
+      displayQueue.forEach((anime, index) => {
+        const card = document.getElementById(`card-${index}`);
+        if (!card) {
+          console.warn(`⚠️ Card ${index} not found`);
+          return;
+        }
+        
+        if (index < current) {
+          // Hide previous cards
+          card.style.display = 'none';
+        } else if (index === current) {
+          // Show current card prominently
+          card.style.display = 'block';
+          card.style.opacity = 1;
+          card.style.transform = 'scale(1) translateY(0)';
+          card.style.zIndex = 100;
+          console.log(`✨ Current card (${index}): ${anime.title}`);
+        } else if (index <= current + 2) {
+          // Show next 2 cards in stack
+          card.style.display = 'block';
+          card.style.opacity = 0.8;
+          card.style.transform = `scale(${1 - (index - current) * 0.05}) translateY(${(index - current) * 10}px)`;
+          card.style.zIndex = 100 - (index - current);
+        } else {
+          // Hide cards that are too far ahead
+          card.style.display = 'none';
+        }
+      });
+    }
+    
+    function getAnimeImages(title, mainPicture) {
+      console.log('🖼️ =========================');
+      console.log('Getting images for:', title);
+      console.log('mainPicture object:', mainPicture);
+      
+      // Prioritize remote images from MAL API
+      const remoteImages = [];
+      if (mainPicture) {
+        if (mainPicture.large) {
+          console.log('📸 Found large image:', mainPicture.large);
+          remoteImages.push(mainPicture.large);
+        }
+        if (mainPicture.medium) {
+          console.log('📸 Found medium image:', mainPicture.medium);
+          remoteImages.push(mainPicture.medium);
+        }
+      } else {
+        console.log('⚠️ No mainPicture object provided');
+      }
+      
+      // Only use local images as fallback if no remote images available
+      const imageMap = {
+        'Naruto': ['images/naruto.jpeg', 'images/naruto02.jpg'],
+        'Bleach': ['images/bleach.jpg'],
+        'One Piece': ['images/onepiece.jpeg'],
+        'Pokemon': ['images/pokemon.jpg'],
+        'Dragon Ball Z': ['images/dbz.jpg'],
+        'Hunter x Hunter': ['images/logo.png'], // Use logo as fallback for Hunter x Hunter
+      };
+      
+      // If we have remote images, use only those. Otherwise, use local as fallback
+      let finalImages;
+      if (remoteImages.length > 0) {
+        finalImages = remoteImages;
+        console.log('✅ Using remote MAL images:', finalImages);
+      } else {
+        const localImages = imageMap[title] || [];
+        finalImages = localImages.length > 0 ? localImages : ['images/logo.png'];
+        console.log('❌ No remote images, using local fallback:', finalImages);
+      }
+      
+      console.log('🎯 FINAL DECISION for', title, ':', finalImages);
+      console.log('🖼️ =========================');
+      return finalImages;
+    }
+    
+    function navigateImages(cardIndex, direction) {
+      const card = document.getElementById(`card-${cardIndex}`);
+      const imagesContainer = document.getElementById(`images-${cardIndex}`);
+      if (!card || !imagesContainer) return;
+      
+      const images = imagesContainer.querySelectorAll('.anime-card-image');
+      const totalImages = images.length;
+      let currentImageIndex = parseInt(card.dataset.currentImage, 10);
+      
+      if (direction === 'next') currentImageIndex = (currentImageIndex + 1) % totalImages;
+      else currentImageIndex = (currentImageIndex - 1 + totalImages) % totalImages;
+      
+      imagesContainer.style.transform = `translateX(-${currentImageIndex * 100}%)`;
+      
+      const indicators = card.querySelectorAll('.indicator-dot');
+      indicators.forEach((dot, i) => dot.classList.toggle('active', i === currentImageIndex));
+      
+      card.dataset.currentImage = currentImageIndex;
+    }
+    
+    // Update anime information display
+    function updateInfo(index) {
+      if (!displayQueue[index]) {
+        console.error('No anime at index:', index);
+        return;
+      }
+      
+      const anime = displayQueue[index];
+      console.log('Updating info for:', anime.title);
+      
+      document.getElementById('anime-title').textContent = anime.title;
+      document.getElementById('anime-synopsis').textContent = anime.synopsis || 'Loading synopsis...';
+      
+      // Fetch detailed synopsis if not available
+      if (!anime.synopsis) {
+        getAnimeInfo(anime.title).then(synopsis => {
+          anime.synopsis = synopsis;
+          if (index === current) {
+            document.getElementById('anime-synopsis').textContent = synopsis;
+          }
+        });
+      }
+    }
+
+    // Debug function to check current state
+    function debugCurrentState() {
+      console.log('🔍 DEBUG STATE:');
+      console.log(`   Current index: ${current}`);
+      console.log(`   Queue length: ${displayQueue.length}`);
+      console.log(`   Current anime: ${displayQueue[current]?.title || 'NONE'}`);
+      console.log(`   Next anime: ${displayQueue[current + 1]?.title || 'NONE'}`);
+      
+      // Check if cards exist in DOM
+      const currentCard = document.getElementById(`card-${current}`);
+      const nextCard = document.getElementById(`card-${current + 1}`);
+      console.log(`   Current card exists: ${!!currentCard}`);
+      console.log(`   Next card exists: ${!!nextCard}`);
+      
+      if (currentCard) {
+        console.log(`   Current card display: ${currentCard.style.display}`);
+        console.log(`   Current card opacity: ${currentCard.style.opacity}`);
+      }
+      
+      if (nextCard) {
+        console.log(`   Next card display: ${nextCard.style.display}`);
+        console.log(`   Next card opacity: ${nextCard.style.opacity}`);
+      }
+    }
+
+    // Handle card swiping
+    async function swipeCard(direction) {
+      console.log(`🎯 Swiping ${direction} on anime:`, displayQueue[current]?.title);
+      
+      if (!displayQueue[current]) {
+        console.error('❌ No current anime to swipe');
+        debugCurrentState();
+        return;
+      }
+      
+      const currentAnime = displayQueue[current];
+      
+      // Mark this anime as shown to prevent repeats
+      shownAnimeIds.add(currentAnime.id);
+      console.log(`✅ Added anime ID ${currentAnime.id} to shown list. Total shown: ${shownAnimeIds.size}`);
+      
+      // If user liked the anime, add to likes and update recommendations
+      if (direction === 'right') {
+        userLikes.push(currentAnime);
+        console.log('💖 Added to likes:', currentAnime.title);
+        console.log('Total likes:', userLikes.length);
+        
+        // Refresh recommendations every 2 likes to get new similar anime
+        if (userLikes.length % 2 === 0) {
+          console.log('🔄 Refreshing recommendations after', userLikes.length, 'likes');
+          
+          // Add swipe animation first
+          let currentCard = document.getElementById(`card-${current}`);
+          if (!currentCard) {
+            console.warn(`⚠️ Current card ${current} missing, recreating...`);
+            createSingleCard(currentAnime, current);
+            currentCard = document.getElementById(`card-${current}`);
+          }
+          
+          if (currentCard) {
+            currentCard.classList.add('swipe-right');
+            
+            setTimeout(async () => {
+              currentCard.style.display = 'none';
+              
+              // Now refresh recommendations (this will reset current to 0 and create new queue)
+              await refreshRecommendations();
+              
+              console.log('🎯 After refresh - current:', current, 'showing:', displayQueue[current]?.title);
+            }, 300);
+          }
+          
+          return; // Exit early as refreshRecommendations handles everything
+        }
+      }
+      
+      // Get the current card (create if missing)
+      let currentCard = document.getElementById(`card-${current}`);
+      if (!currentCard) {
+        console.warn(`⚠️ Current card ${current} missing, recreating...`);
+        createSingleCard(currentAnime, current);
+        currentCard = document.getElementById(`card-${current}`);
+      }
+      
+      if (currentCard) {
+        currentCard.classList.add(direction === 'right' ? 'swipe-right' : 'swipe-left');
+        
+        setTimeout(() => {
+          // Hide the current card
+          currentCard.style.display = 'none';
+          
+          // Move to next anime
+          current++;
+          console.log(`📱 Advanced to anime ${current}/${displayQueue.length}`);
+          
+          // Debug current state
+          debugCurrentState();
+          
+          // Check if we have a next anime to show
+          if (current < displayQueue.length) {
+            // Get or create the next card
+            let nextCard = document.getElementById(`card-${current}`);
+            if (!nextCard) {
+              console.warn(`⚠️ Next card ${current} missing, creating...`);
+              createSingleCard(displayQueue[current], current);
+              nextCard = document.getElementById(`card-${current}`);
+            }
+            
+            if (nextCard) {
+              // Show the next card
+              nextCard.style.display = 'block';
+              nextCard.style.opacity = 1;
+              nextCard.style.transform = 'scale(1) translateY(0)';
+              nextCard.style.zIndex = 100;
+              
+              // Update card positions for stacking effect
+              showCurrentCard();
+              
+              // Update anime info
+              updateInfo(current);
+              console.log(`✅ Now showing: ${displayQueue[current]?.title}`);
+            } else {
+              console.error('❌ Failed to create next card');
+            }
+          } else {
+            console.log('📥 Reached end of queue, fetching more anime...');
+            fetchMoreAnime().then(() => {
+              // After fetching more, ensure we have cards
+              if (current < displayQueue.length) {
+                let nextCard = document.getElementById(`card-${current}`);
+                if (!nextCard) {
+                  createSingleCard(displayQueue[current], current);
+                }
+                showCurrentCard();
+                updateInfo(current);
+              }
+            });
+          }
+          
+          // Check if we need more anime (when we have 3 or fewer left)
+          if (displayQueue.length - current <= 3) {
+            console.log('🔄 Running low on anime, fetching more...');
+            fetchMoreAnime().then(() => {
+              // Add new anime to the existing queue
+              const newQueue = createDisplayQueue(similarAnimeList, trendingAnimeList);
+              const uniqueNewAnime = newQueue.filter(anime => 
+                !displayQueue.some(existing => existing.id === anime.id) &&
+                !shownAnimeIds.has(anime.id) // Prevent repeats
+              );
+              
+              if (uniqueNewAnime.length > 0) {
+                const startIndex = displayQueue.length;
+                displayQueue.push(...uniqueNewAnime);
+                addNewCards(uniqueNewAnime, startIndex);
+                console.log(`✅ Added ${uniqueNewAnime.length} more anime to queue`);
+              }
+            });
+          }
+        }, 300);
+      } else {
+        console.error('❌ Could not create or find current card');
+        debugCurrentState();
+      }
+    }
+    
+    async function refreshRecommendations() {
+      console.log('🔄 Refreshing recommendations...');
+      showLoading();
+      
+      try {
+        // Fetch new similar anime based on user likes
+        const newSimilarAnime = await fetchSimilarAnime();
+        console.log('📥 Fetched', newSimilarAnime.length, 'new similar anime');
+        
+        // Add unique similar anime to the list
+        const uniqueSimilar = newSimilarAnime.filter(anime => 
+          !similarAnimeList.some(existing => existing.id === anime.id) &&
+          !shownAnimeIds.has(anime.id)
+        );
+        similarAnimeList.push(...uniqueSimilar);
+        
+        // Create completely new display queue starting fresh
+        const newQueue = createDisplayQueue(similarAnimeList, trendingAnimeList);
+        console.log('🔄 Created fresh display queue with', newQueue.length, 'items');
+        
+        // Filter out already shown anime from the new queue
+        const freshQueue = newQueue.filter(anime => !shownAnimeIds.has(anime.id));
+        console.log('✅ Filtered to', freshQueue.length, 'unseen anime');
+        
+        if (freshQueue.length > 0) {
+          // Replace the display queue with fresh content
+          displayQueue = freshQueue;
+          current = 0; // Reset to start of new queue
+          
+          console.log('🎯 Resetting to fresh queue, now showing:', displayQueue[current]?.title);
+          
+          // Recreate all cards with the fresh queue
+          createCards();
+          updateInfo(current);
+          
+          console.log('✅ Refreshed with new recommendations');
+        } else {
+          console.warn('⚠️ No new unseen anime in refresh, continuing with current queue');
+        }
+        
+      } catch (error) {
+        console.error('❌ Error refreshing recommendations:', error);
+      } finally {
+        hideLoading();
+      }
+    }
+    
+    async function getAnimeInfo(title) {
+      try {
+        const response = await fetch(`${API_BASE}/mal/anime-info?title=${encodeURIComponent(title)}`);
+        if (!response.ok) return "Synopsis not available.";
+        const data = await response.json();
+        const anime = data.data?.[0]?.node;
+        // Prepend title to synopsis if not already there
+        let synopsis = anime?.synopsis || "No synopsis available.";
+        if (!synopsis.toLowerCase().includes(title.toLowerCase())) {
+            synopsis = `${title}: ${synopsis}`;
+        }
+        return synopsis;
+      } catch (error) {
+        console.error(`Error fetching synopsis for ${title}:`, error);
+        return "Error loading synopsis.";
+      }
+    }
+    
+    // Test backend connectivity
+    async function testBackendConnectivity() {
+      console.log('🔍 Testing backend connectivity...');
+      try {
+        const response = await fetch(`${API_BASE}/mal/trending?limit=1`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        console.log('🔗 Backend connectivity test:', response.status, response.statusText);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Backend is reachable. Sample data:', data);
+          return true;
+        } else {
+          console.error('❌ Backend returned error:', response.status);
+          return false;
+        }
+      } catch (error) {
+        console.error('❌ Cannot reach backend:', error.message);
+        console.error('This might be a CORS issue or the backend is not running');
+        return false;
+      }
+    }
+
+    async function initializeRecommendations() {
+      console.log('=== INITIALIZING RECOMMENDATIONS ===');
+      
+      // Test backend connectivity first
+      const backendReachable = await testBackendConnectivity();
+      if (!backendReachable) {
+        console.warn('⚠️ Backend not reachable, using demo data only');
+        displayQueue = getDemoTrendingAnime().map(anime => ({ ...anime, source: 'trending' }));
+        createCards();
+        updateInfo(current);
+        return;
+      }
+      
+      showLoading();
+      
+      try {
+        // Try to fetch from API first
+        console.log('Fetching trending anime from API...');
+        trendingAnimeList = await fetchTrendingAnime();
+        console.log('✅ Fetched trending anime:', trendingAnimeList.length, 'items');
+        console.log('First anime:', trendingAnimeList[0]);
+        
+        if (trendingAnimeList.length === 0) {
+          console.warn('⚠️ No trending anime received from API');
+          trendingAnimeList = getDemoTrendingAnime();
+          console.log('Using demo data:', trendingAnimeList.length, 'items');
+        }
+        
+        console.log('Creating display queue...');
+        displayQueue = createDisplayQueue([], trendingAnimeList);
+        console.log('✅ Created display queue:', displayQueue.length, 'items');
+        console.log('First queue item:', displayQueue[0]);
+        
+        if (displayQueue.length > 0) {
+          console.log('Creating cards...');
+          createCards();
+          console.log('Updating info for current anime...');
+          updateInfo(current);
+          console.log('✅ Successfully initialized with data');
+        } else {
+          console.error('❌ Display queue is empty, using demo data');
+          displayQueue = getDemoTrendingAnime().map(anime => ({ ...anime, source: 'trending' }));
+          console.log('Demo fallback queue:', displayQueue);
+          createCards();
+          updateInfo(current);
+        }
+      } catch (error) {
+        console.error('❌ Error initializing recommendations:', error);
+        console.log('Using demo data as final fallback');
+        displayQueue = getDemoTrendingAnime().map(anime => ({ ...anime, source: 'trending' }));
+        createCards();
+        updateInfo(current);
+      } finally {
+        hideLoading();
+        console.log('=== INITIALIZATION COMPLETE ===');
+      }
+    }
+    
+    document.getElementById('cross-btn').addEventListener('click', () => swipeCard('left'));
+    document.getElementById('check-btn').addEventListener('click', () => swipeCard('right'));
+    
+    initializeRecommendations();
+  </script>
+</body>

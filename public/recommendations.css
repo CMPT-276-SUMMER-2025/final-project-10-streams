@@ -1,0 +1,254 @@
+.anime-recommendation-wrapper {
+      margin: 2rem auto;
+      width: 90%;
+      max-width: 800px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .anime-card-container {
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 1.5rem;
+      border: 3px solid #29a9ff;
+      box-shadow: 0 0 20px rgba(41, 169, 255, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+    
+    #anime-cards {
+      position: relative;
+      width: 100%;
+      height: 250px;
+      margin-bottom: 1rem;
+    }
+    
+    .anime-card {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+    
+    .anime-card-carousel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 12px;
+      background-color: #000;
+    }
+    
+    .anime-card-images {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.4s ease;
+    }
+    
+    .anime-card-image {
+      min-width: 100%;
+      height: 100%;
+      object-fit: contain;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .anime-card-nav {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .anime-card-carousel:hover .anime-card-nav {
+      opacity: 1;
+    }
+    
+    .nav-btn {
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      z-index: 10;
+    }
+    
+    .nav-btn:hover {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+    
+    .anime-info-box {
+      background-color: rgba(50, 50, 50, 0.9);
+      color: #fff;
+      border-radius: 12px;
+      padding: 1rem;
+      margin: 1rem 0;
+      width: 90%;
+      text-align: center;
+    }
+    
+    .anime-info-box strong {
+      font-size: 1.2rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    
+    .anime-info-box p {
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    
+    .tinder-buttons {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 30%;
+      margin-top: 1rem;
+    }
+    
+    .tinder-btn {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s, background-color 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .tinder-btn.cross {
+      background-color: #ff4458;
+    }
+    
+    .tinder-btn.check {
+      background-color: #26de81;
+    }
+    
+    .tinder-btn:hover {
+      transform: scale(1.1);
+    }
+    
+    .swipe-left {
+      transform: translateX(-150%) rotate(-30deg);
+      opacity: 0;
+    }
+    
+    .swipe-right {
+      transform: translateX(150%) rotate(30deg);
+      opacity: 0;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .pulse {
+      animation: pulse 0.5s;
+    }
+    
+    .image-indicator {
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .indicator-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.5);
+      transition: background-color 0.3s;
+    }
+    
+    .indicator-dot.active {
+      background-color: #29a9ff;
+    }
+    .recommendation-source {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      z-index: 5;
+    }
+    
+    .loading-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      width: 100%;
+    }
+    
+    .loading-spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #29a9ff;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+        .error-message {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          width: 100%;
+          color: white;
+          text-align: center;
+        }
+        
+        .error-message button {
+          margin-top: 1rem;
+          background-color: #e0363b;
+          color: white;
+          border: none;
+          padding: 0.5rem 1rem;
+          border-radius: 10px;
+          cursor: pointer;
+        }
+        
+        .error-message button:hover {
+          background-color: #c72b2f;
+        } 
