@@ -1,6 +1,13 @@
-<link rel="stylesheet" href="newCss.css">
-<link rel="stylesheet" href="recommendations.css">
-<link rel="icon" href="images/logo.png" type="image/png">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yomiru - Anime Recommendations</title>
+  <link rel="stylesheet" href="newCss.css">
+  <link rel="stylesheet" href="recommendations.css">
+  <link rel="icon" href="images/logo.png" type="image/png">
+</head>
 <body style="min-height:100vh; margin:0; display:flex; flex-direction:column;">
   <header>
     <div class="logo"><a href="index.html"><img src="images/Website_logo_new.png" alt="Website logo"></a></div>
@@ -20,7 +27,8 @@
       </div>
     </nav>
   </header>
-<body>
+
+  <main style="flex:1; display:flex; align-items:center; justify-content:center; min-height:0;">
   <section class="anime-recommendation-wrapper">
     <div class="anime-card-container">
       <div id="anime-cards">
@@ -415,12 +423,28 @@
         
         img.onerror = function() { 
           console.error('❌ Image failed to load:', imgSrc, 'for anime:', anime.title);
+          console.error('   Original src was:', this.src);
+          
+          // Check if this was already our fallback
+          if (this.src.includes('logo.png')) {
+            console.error('🚨 Even logo.png failed to load!');
+            return;
+          }
+          
           this.src = 'images/logo.png'; // Use existing logo as fallback
           console.log('🔄 Switched to fallback image: images/logo.png');
         };
         
         img.onload = function() {
           console.log('✅ Image loaded successfully:', imgSrc, 'for anime:', anime.title);
+          console.log('   Final loaded src:', this.src);
+          console.log('   Image dimensions:', this.naturalWidth, 'x', this.naturalHeight);
+          
+          // Additional check to ensure we're not loading wrong images
+          if (this.src.includes('gon.jpg') && !anime.title.toLowerCase().includes('hunter')) {
+            console.error('🚨 WRONG IMAGE DETECTED: gon.jpg loaded for', anime.title);
+            console.error('   This should not happen! Check image mapping.');
+          }
         };
         
         imagesContainer.appendChild(img);
@@ -514,25 +538,39 @@
         console.log('⚠️ No mainPicture object provided');
       }
       
-      // Only use local images as fallback if no remote images available
+      // Improved local image mapping (only as fallback)
       const imageMap = {
         'Naruto': ['images/naruto.jpeg', 'images/naruto02.jpg'],
         'Bleach': ['images/bleach.jpg'],
         'One Piece': ['images/onepiece.jpeg'],
         'Pokemon': ['images/pokemon.jpg'],
         'Dragon Ball Z': ['images/dbz.jpg'],
-        'Hunter x Hunter': ['images/logo.png'], // Use logo as fallback for Hunter x Hunter
+        'My Hero Academia': ['images/logo.png'], 
+        'Hunter x Hunter': ['images/logo.png'], // Use logo instead of wrong image
+        'Attack on Titan': ['images/logo.png'],
+        'Shingeki no Kyojin': ['images/logo.png'],
+        'Death Note': ['images/logo.png']
       };
       
-      // If we have remote images, use only those. Otherwise, use local as fallback
-      let finalImages;
+      // Get local fallback images
+      const localImages = imageMap[title] || [];
+      
+      // Combine remote and local images, prioritizing remote
+      let finalImages = [];
+      
       if (remoteImages.length > 0) {
-        finalImages = remoteImages;
-        console.log('✅ Using remote MAL images:', finalImages);
+        // Use remote images first, then local as backup
+        finalImages = [...remoteImages, ...localImages];
+        console.log('✅ Using remote MAL images with local backup:', finalImages);
       } else {
-        const localImages = imageMap[title] || [];
+        // No remote images, use local or logo as final fallback
         finalImages = localImages.length > 0 ? localImages : ['images/logo.png'];
-        console.log('❌ No remote images, using local fallback:', finalImages);
+        console.log('❌ No remote images, using local fallback only:', finalImages);
+      }
+      
+      // Ensure we always have at least the logo as fallback
+      if (finalImages.length === 0) {
+        finalImages = ['images/logo.png'];
       }
       
       console.log('🎯 FINAL DECISION for', title, ':', finalImages);
@@ -905,4 +943,6 @@
     
     initializeRecommendations();
   </script>
+  </main>
 </body>
+</html>
