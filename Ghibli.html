@@ -2,7 +2,8 @@
 <link rel="icon" href="images/logo.png" type="image/png">
 <body>
   <header>
-    <div class="logo"><img src="images/Website_logo_new.png" alt="Website logo"></div>
+    <a href="newHomepage.html">
+    <div class="logo"><img src="images/Website_logo_new.png" alt="Website logo"></div></a>
     <nav class="navbar">
       <a href="Ghibli.html" >Ghibli</a>
 
@@ -12,26 +13,115 @@
       <input type="text" placeholder="🔍 Search" />
     </nav>
   </header>
-<body>
-  <section class="ghibli-wrapper">
-  <div class="carousel-ghibli" id="carousel">
-    <img src="images/totoro.jpeg" alt="Totoro Frame" class="carousel-image" />
-    <img src="images/ponyo.jpeg" alt="Frame 2" class="carousel-image" />
-    <img src="images/spirited away.jpeg" alt="Frame 3" class="carousel-image" />
+
+  <div class="carousel-ghibli-wrapper">
+  <button class="carousel-btn prev">&#10094;</button>
+
+  <div class="carousel-ghibli-track" id="carousel-track">
+    <div class="carousel-ghibli-item active">
+      <img src="images/totoro.jpeg" alt="Totoro Frame"
+           data-title="My Neighbor Totoro"
+           data-desc="A heartwarming story of two sisters who encounter forest spirits." />
+    </div>
+    <div class="carousel-ghibli-item">
+      <img src="images/ponyo.jpeg" alt="Ponyo Frame"
+           data-title="Ponyo"
+           data-desc="A magical fish-girl who wants to become human." />
+    </div>
+    <div class="carousel-ghibli-item">
+      <img src="images/spirited away.jpeg" alt="Spirited Away Frame"
+           data-title="Spirited Away"
+           data-desc="A girl enters a spirit world to save her parents." />
+    </div>
   </div>
 
-  <div class="ghibli-info">
-    <p><strong>Lorem Ipsum</strong><br>
-    word in classical literature, discovered the undoubtable source...<br>
-    He first line of Lorem Ipsum, "Lorem ipsum dolor sit amet...", comes from a line in section 1.10.32.</p>
-  </div>
+  <button class="carousel-btn next">&#10095;</button>
+</div>
 
-  <div class="ghibli-buttons">
-    <button class="ditch">Ditch</button>
-    <button class="watch">Watch</button>
-  </div>
-</section>
+<div class="ghibli-info-box">
+  <h2 id="anime-title">My Neighbor Totoro</h2>
+  <p id="anime-desc">A heartwarming story of two sisters who encounter forest spirits.</p>
+</div>
+
+
 
 
 </body>
 </html>
+<script>
+
+
+const carousel = document.getElementById("carousel-track");
+const items = document.querySelectorAll(".carousel-ghibli-item");
+const title = document.getElementById("anime-title");
+const desc = document.getElementById("anime-desc");
+const prevButton = document.querySelector(".carousel-btn.prev");
+const nextButton = document.querySelector(".carousel-btn.next");
+
+let activeIndex = 0;
+let isScrollingProgrammatically = false;
+
+function setActiveItem(index, fromScroll = false) {
+  if (index < 0 || index >= items.length) return;
+
+  items.forEach((item, i) => {
+    item.classList.toggle("active", i === index);
+  });
+
+  const activeItem = items[index];
+  const img = activeItem.querySelector("img");
+
+  title.textContent = img.dataset.title;
+  desc.textContent = img.dataset.desc;
+
+  activeIndex = index;
+
+  // Only scroll if not already in a scroll event
+  if (!fromScroll) {
+    isScrollingProgrammatically = true;
+    activeItem.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest"
+    });
+    setTimeout(() => {
+      isScrollingProgrammatically = false;
+    }, 500); // Wait till scroll settles
+  }
+}
+
+prevButton.addEventListener("click", () => {
+  setActiveItem(activeIndex - 1);
+});
+
+nextButton.addEventListener("click", () => {
+  setActiveItem(activeIndex + 1);
+});
+
+// Only update active item on scroll when it's not from button click
+carousel.addEventListener("scroll", () => {
+  if (isScrollingProgrammatically) return;
+
+  let closestIndex = 0;
+  let minDiff = Infinity;
+
+  items.forEach((item, i) => {
+    const rect = item.getBoundingClientRect();
+    const center = window.innerWidth / 2;
+    const itemCenter = rect.left + rect.width / 2;
+    const diff = Math.abs(center - itemCenter);
+
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIndex = i;
+    }
+  });
+
+  setActiveItem(closestIndex, true); // `fromScroll = true`
+});
+
+// Initial display
+setActiveItem(0);
+
+
+</script>
