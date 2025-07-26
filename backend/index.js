@@ -30,6 +30,13 @@ console.log("Loaded CLIENT_ID from env:", CLIENT_ID);
 
 let access_token = "";
 
+// Helper function to get redirect URI
+function getRedirectUri(req) {
+  const protocol = req.secure || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+  const host = req.get('host');
+  return REDIRECT_URI || `${protocol}://${host}/callback`;
+}
+
 // Health check endpoint for deployment
 app.get('/health', (req, res) => {
   res.json({ 
@@ -64,10 +71,14 @@ app.get("/login", (req, res) => {
     maxAge: 300000 // 5 minutes
   });
 
+  // Use environment variable or auto-detect redirect URI
+  const redirectUri = getRedirectUri(req);
+  console.log("Using redirect URI:", redirectUri);
+
   const authUrl = `https://myanimelist.net/v1/oauth2/authorize` +
   `?response_type=code` +
   `&client_id=${CLIENT_ID}` +
-  `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+  `&redirect_uri=${encodeURIComponent(redirectUri)}` +
   `&code_challenge=${codeChallenge}` +
   `&code_challenge_method=S256`;
 
@@ -91,6 +102,9 @@ app.get("/callback", async (req, res) => {
   try {
     const qs = require("querystring");
 
+    // Use same redirect URI logic as login route
+    const redirectUri = getRedirectUri(req);
+
     const tokenRes = await axios.post(
       "https://myanimelist.net/v1/oauth2/token",
       qs.stringify({
@@ -98,7 +112,7 @@ app.get("/callback", async (req, res) => {
         code,
         client_id: CLIENT_ID,
         code_verifier: codeVerifier,
-        redirect_uri: REDIRECT_URI
+        redirect_uri: redirectUri
       }),
       {
         headers: {
@@ -110,8 +124,8 @@ app.get("/callback", async (req, res) => {
     access_token = tokenRes.data.access_token;
     // Redirect to the appropriate domain based on environment
     const frontendUrl = process.env.FRONTEND_URL || req.get('host');
-    const protocol = req.secure || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-    res.redirect(`${protocol}://${frontendUrl}/index.html`);
+    const redirectProtocol = req.secure || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+    res.redirect(`${redirectProtocol}://${frontendUrl}/index.html`);
   } catch (err) {
     console.error("❌ Token exchange failed:", err.response?.data || err.message);
     res.status(500).send("Login failed" + JSON.stringify(err.response?.data || err.message));

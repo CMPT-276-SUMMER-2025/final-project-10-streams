@@ -1,4 +1,4 @@
-const API_BASE = "https://final-project-10-streams-q2e3.onrender.com";
+const API_BASE = "https://final-project-10-streams.onrender.com";
 
 function loginWithMAL() {
   window.location.href = `${API_BASE}/login`;
