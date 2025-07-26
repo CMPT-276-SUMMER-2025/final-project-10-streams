@@ -1,49 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tracemoe</title>
-  <link rel="stylesheet" href="newCss.css" />
-  <link rel="icon" href="images/logo.png" type="image/png" />
-  <script src="script.js" defer></script>
+  <link rel="stylesheet" href="main css.css">
+  <link rel="icon" type="image/png" href="images/naruto.jpg">
 </head>
 
+
 <body class="tracemoe">
-  <!-- Header/Nav -->
-  <header>
-    <div class="logo">
-      <img src="images/Website_logo_new.png" alt="Website logo" />
+  <div class="navbar">
+ <div class="logo"><a href="index.html"><img src="images/Website_logo_new.png" alt="Website logo"></a></div>
+    <div class="navblock">
+      <a class="navlinks" href="newHomepage.html">Home</a>
+      <a class="navlinks" href="tracemoe.html">Tracemoe</a>
+      <a class="navlinks" href="anime.html">Anime</a>
+      <a class="navlinks" href="recommendations.html">Recommendations</a>
+      <a class="navlinks" href="contact.html">Contact</a>
+      <button class = "navlinks" id="malLoginButton" style="font-size: medium; background-color: transparent;">Login</button>
     </div>
-    <nav class="navbar">
-      <a href="Ghibli.html">Ghibli</a>
-      <a href="tracemoe.html">Tracemoe</a>
-      <a href="manga.html">Manga</a>
-      <a href="Chatbot.html">Chatbot</a>
-      <a href="About.html">About</a>
-      <input type="text" placeholder="🔍 Search" />
-    </nav>
-  </header>
+    <div class="search-button">
+      <button class="search-btn" onclick="window.location.href='search.html'">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
 
-  <!-- Main Tracemoe Section -->
-  <main>
-  <div class="trace-wrapper">
-    <div class="trace-container">
-      <h1>Find Anime from Screenshot</h1>
-
-      <label for="image-upload" class="upload-btn">
-        <img src="images/one Piece png.png" alt="Upload screenshot">
-        Click to Upload
-        <input type="file" id="image-upload" accept="image/*" style="display: none;">
+  <div class="tracecontainer">
+    <div class="traceblock">
+      <label for="tracemoein" class="inputblock">
+        <img src="images/cam.png" alt="Upload screenshot" width="50" height="50">
+        <input id="tracemoein" class="tracemoein" type="file" accept="image/*" style="display:none;">
       </label>
+      <div class="block">
+        <h1 class="tracemoeheading" id="tracemoeheading"></h1>
+        <p class="tracemoepara" id="tracemoepara"></p>
+      </div>
+    </div>
 
-      <div id="results" class="results-box" style="display: none;">
-        <h2 id="anime-title"></h2>
-        <p id="episode-info"></p>
-        <a id="watch-link" target="_blank" class="watch-now-btn">Watch Now</a>
+    <div class="toggles">
+      <div class="watch">
+        <button class="watchlink" href="">Watch Now</button>
+        <button class="addlink" href="">Add to list</button>
+
       </div>
     </div>
   </div>
-</main>
+
+
+  <script src="main js.js"></script>
+  <script src="main js.js"></script>
 </body>
 </html>
